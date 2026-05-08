@@ -1,0 +1,3 @@
+https://bulb-plural-lushly.ngrok-free.dev -> http://localhost:8000
+
+ngrok 실행 명령 : ngrok http 8000 --scheme http
