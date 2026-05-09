@@ -5,6 +5,20 @@
 ## 개요
 실시간 물리 엔진 시뮬레이션과 양방향 통신을 결합한 고급 트랙터 ECU 시스템입니다. 웹과 Wokwi 시뮬레이터 간의 실시간 데이터 동기화를 지원합니다.
 
+## 시스템 스크린샷
+
+### 웹 대시보드
+![웹 대시보드](resources/dashboard.png)
+터미널 스타일의 실시간 ECU 모니터링 인터페이스
+
+### Wokwi 시뮬레이터
+![Wokwi 시뮬레이터](resources/wokwi_simulation.png)
+ESP32 기반 하드웨어 시뮬레이션 환경
+
+### 시스템 아키텍처
+![시스템 아키텍처](resources/architecture.png)
+전체 시스템 구조와 데이터 흐름
+
 ## 시스템 구조
 ```
 웹 대시보드 ↔ FastAPI 서버 ↔ Wokwi ESP32
@@ -26,6 +40,12 @@
 pr4_Two-way_communication/
 ├── main.py                     # 고급 ECU 시뮬레이터
 ├── server.py                   # 기본 서버 버전
+├── esp32_ECU_simulator.ino      # ESP32 펌웨어
+├── diagram.json                # Wokwi 회로도
+├── resources/                  # 이미지 리소스 폴더
+│   ├── dashboard.png           # 웹 대시보드 스크린샷
+│   ├── wokwi_simulation.png    # Wokwi 시뮬레이터 스크린샷
+│   └── architecture.png        # 시스템 아키텍처 다이어그램
 └── __pycache__/                # 컴파일 캐시
 ```
 
