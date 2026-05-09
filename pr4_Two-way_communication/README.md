@@ -8,15 +8,15 @@
 ## 시스템 스크린샷
 
 ### 웹 대시보드
-![웹 대시보드](resources/dashboard.png)
+![웹 대시보드](resources/real-time_Eng_temp_monitoring_sys.png)
 터미널 스타일의 실시간 ECU 모니터링 인터페이스
 
 ### Wokwi 시뮬레이터
-![Wokwi 시뮬레이터](resources/wokwi_simulation.png)
+![Wokwi 시뮬레이터](resources/ECU_Auto_Cooling_HW.png)
 ESP32 기반 하드웨어 시뮬레이션 환경
 
 ### 시스템 아키텍처
-![시스템 아키텍처](resources/architecture.png)
+![시스템 아키텍처](resources/tractor_dignostics_temp_servo_valve_control.png)
 전체 시스템 구조와 데이터 흐름
 
 ## 시스템 구조
@@ -43,9 +43,9 @@ pr4_Two-way_communication/
 ├── esp32_ECU_simulator.ino      # ESP32 펌웨어
 ├── diagram.json                # Wokwi 회로도
 ├── resources/                  # 이미지 리소스 폴더
-│   ├── dashboard.png           # 웹 대시보드 스크린샷
-│   ├── wokwi_simulation.png    # Wokwi 시뮬레이터 스크린샷
-│   └── architecture.png        # 시스템 아키텍처 다이어그램
+│   ├── real-time_Eng_temp_monitoring_sys.png  # 웹 대시보드 스크린샷
+│   ├── ECU_Auto_Cooling_HW.png               # Wokwi 시뮬레이터 스크린샷
+│   └── tractor_dignostics_temp_servo_valve_control.png  # 시스템 아키텍처 다이어그램
 └── __pycache__/                # 컴파일 캐시
 ```
 

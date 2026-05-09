@@ -4,17 +4,17 @@
 
 ## 이미지 파일 목록
 
-- **dashboard.png**: 웹 기반 ECU 대시보드 스크린샷
+- **real-time_Eng_temp_monitoring_sys.png**: 웹 기반 ECU 대시보드 스크린샷
   - 터미널 스타일의 녹색 텍스트 인터페이스
   - 실시간 RPM, 온도, 속도 모니터링
   - 액셀 페달 슬라이더 및 제어 버튼
 
-- **wokwi_simulation.png**: Wokwi 시뮬레이터 환경
+- **ECU_Auto_Cooling_HW.png**: Wokwi 시뮬레이터 환경
   - ESP32 보드와 주변 하드웨어 구성
   - 가변저항(액셀)과 RGB LED 연결
   - 실시간 시뮬레이션 실행 화면
 
-- **architecture.png**: 시스템 아키텍처 다이어그램
+- **tractor_dignostics_temp_servo_valve_control.png**: 시스템 아키텍처 다이어그램
   - 전체 시스템 구조와 데이터 흐름
   - 웹-서버-ESP32 간의 통신 프로토콜
   - 엔진 물리 연산 모듈 구성
