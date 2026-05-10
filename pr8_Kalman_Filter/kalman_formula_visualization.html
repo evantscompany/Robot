@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>칼만 필터 공식 시각화</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333; min-height: 100vh; padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px; margin: 0 auto; background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center; color: #4a5568; margin-bottom: 30px;
+            font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .formula-section {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px; padding: 25px; margin: 20px 0;
+            border-left: 5px solid #667eea;
+        }
+        
+        .formula-title {
+            font-size: 1.4em; color: #2d3748; margin-bottom: 15px;
+            font-weight: bold; display: flex; align-items: center; gap: 10px;
+        }
+        
+        .formula {
+            background: white; padding: 20px; border-radius: 10px;
+            font-family: 'Courier New', monospace; font-size: 1.2em;
+            text-align: center; margin: 15px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid #e2e8f0;
+        }
+        
+        .explanation {
+            background: #f7fafc; padding: 15px; border-radius: 8px;
+            margin: 10px 0; line-height: 1.6; border-left: 4px solid #4299e1;
+        }
+        
+        .interactive-demo {
+            background: white; border-radius: 15px; padding: 25px;
+            margin: 20px 0; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .slider-container {
+            margin: 20px 0; padding: 15px; background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .slider-label {
+            display: flex; justify-content: space-between; margin-bottom: 10px;
+            font-weight: bold; color: #4a5568;
+        }
+        
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 5px;
+            background: #ddd; outline: none; -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 20px;
+            height: 20px; border-radius: 50%; background: #667eea; cursor: pointer;
+        }
+        
+        .result-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 20px; border-radius: 10px;
+            text-align: center; font-size: 1.1em; margin: 20px 0;
+        }
+        
+        .value-highlight {
+            font-size: 1.5em; font-weight: bold; color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .flow-diagram {
+            display: flex; justify-content: space-around; align-items: center;
+            margin: 30px 0; padding: 20px; background: #f8f9fa;
+            border-radius: 15px;
+        }
+        
+        .flow-step {
+            background: white; padding: 15px; border-radius: 10px;
+            text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            min-width: 150px; position: relative;
+        }
+        
+        .flow-arrow {
+            font-size: 2em; color: #667eea; margin: 0 10px;
+        }
+        
+        .parameter-card {
+            background: white; border: 2px solid #e2e8f0; border-radius: 10px;
+            padding: 15px; margin: 10px 0; transition: all 0.3s ease;
+        }
+        
+        .parameter-card:hover {
+            transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+        
+        .parameter-name {
+            font-weight: bold; color: #4a5568; font-size: 1.1em;
+        }
+        
+        .parameter-value {
+            color: #667eea; font-size: 1.3em; font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .visualization-canvas {
+            background: white; border-radius: 10px; margin: 20px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🧮 칼만 필터 공식 시각화</h1>
+    
+    <div class="formula-section">
+        <div class="formula-title">
+            <span>📐</span> 칼만 이득 (Kalman Gain)
+        </div>
+        <div class="formula">
+            K = P<sub>est</sub> / (P<sub>est</sub> + R<sub>meas</sub>)
+        </div>
+        <div class="explanation">
+            <strong>K (칼만 이득):</strong> 예측과 측정 중 어느 쪽을 더 믿을지 결정하는 가중치 (0 ≤ K ≤ 1)<br>
+            <strong>P<sub>est</sub> (예측 오차):</strong> 현재 예측의 불확실성<br>
+            <strong>R<sub>meas</sub> (측정 오차):</strong> 센서 측정의 불확실성
+        </div>
+    </div>
+
+    <div class="formula-section">
+        <div class="formula-title">
+            <span>🎯</span> 상태 업데이트
+        </div>
+        <div class="formula">
+            x<sub>est</sub> = x<sub>prev</sub> + K × (z<sub>meas</sub> - x<sub>prev</sub>)
+        </div>
+        <div class="explanation">
+            <strong>x<sub>est</sub> (최종 추정값):</strong> 칼만 필터의 최종 출력<br>
+            <strong>x<sub>prev</sub> (이전 추정값):</strong> 직전 단계의 필터 출력<br>
+            <strong>z<sub>meas</sub> (현재 측정값):</strong> 센서에서 들어온 노이즈 있는 데이터
+        </div>
+    </div>
+
+    <div class="formula-section">
+        <div class="formula-title">
+            <span>🔄</span> 오차 공분산 업데이트
+        </div>
+        <div class="formula">
+            P<sub>est</sub> = (1 - K) × P<sub>est</sub>
+        </div>
+        <div class="explanation">
+            다음 계산을 위해 예측 오차를 보정합니다. 칼만 이득이 클수록 오차가 더 많이 감소합니다.
+        </div>
+    </div>
+
+    <div class="interactive-demo">
+        <h2 style="text-align: center; color: #4a5568; margin-bottom: 20px;">
+            🎮 인터랙티브 파라미터 시뮬레이션
+        </h2>
+        
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>예측 오차 (P<sub>est</sub>)</span>
+                <span id="predErrorValue">1.0</span>
+            </div>
+            <input type="range" id="predError" min="0.1" max="5.0" step="0.1" value="1.0">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>측정 오차 (R<sub>meas</sub>)</span>
+                <span id="measErrorValue">0.5</span>
+            </div>
+            <input type="range" id="measError" min="0.1" max="5.0" step="0.1" value="0.5">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>이전 추정값 (x<sub>prev</sub>)</span>
+                <span id="prevEstValue">10.0</span>
+            </div>
+            <input type="range" id="prevEst" min="0" max="20" step="0.5" value="10.0">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>현재 측정값 (z<sub>meas</sub>)</span>
+                <span id="currMeasValue">12.0</span>
+            </div>
+            <input type="range" id="currMeas" min="0" max="20" step="0.5" value="12.0">
+        </div>
+
+        <div class="result-display pulse">
+            <div>칼만 이득 (K): <span class="value-highlight" id="kalmanGain">0.67</span></div>
+            <div style="margin-top: 10px;">최종 추정값: <span class="value-highlight" id="finalEstimate">11.33</span></div>
+        </div>
+
+        <div class="flow-diagram">
+            <div class="flow-step">
+                <strong>입력</strong><br>
+                예측: <span id="flowPrev">10.0</span><br>
+                측정: <span id="flowMeas">12.0</span>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <strong>계산</strong><br>
+                K = <span id="flowK">0.67</span><br>
+                보정: <span id="flowCorrection">1.33</span>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <strong>출력</strong><br>
+                최종: <span id="flowFinal">11.33</span><br>
+                오차: <span id="flowError">0.33</span>
+            </div>
+        </div>
+
+        <canvas id="visualCanvas" class="visualization-canvas" width="800" height="300"></canvas>
+    </div>
+
+    <div class="formula-section">
+        <div class="formula-title">
+            <span>💡</span> 직관적 이해
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+            <div class="parameter-card">
+                <div class="parameter-name">K ≈ 0 (예측 신뢰)</div>
+                <div class="parameter-value">부드러운 필터링</div>
+                <div style="margin-top: 10px; font-size: 0.9em; color: #718096;">
+                    노이즈 제거에 효과적이지만, 실제 변화에 느리게 반응
+                </div>
+            </div>
+            <div class="parameter-card">
+                <div class="parameter-name">K ≈ 0.5 (균형)</div>
+                <div class="parameter-value">중간 필터링</div>
+                <div style="margin-top: 10px; font-size: 0.9em; color: #718096;">
+                    예측과 측정을 동등하게 신뢰하는 균형 상태
+                </div>
+            </div>
+            <div class="parameter-card">
+                <div class="parameter-name">K ≈ 1 (측정 신뢰)</div>
+                <div class="parameter-value">빠른 반응</div>
+                <div style="margin-top: 10px; font-size: 0.9em; color: #718096;">
+                    변화에 빠르게 반응하지만, 노이즈가 많이 포함됨
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="formula-section">
+        <div class="formula-title">
+            <span>🚀</span> 실제 적용 예시
+        </div>
+        <div class="explanation">
+            <strong>자동차 GPS:</strong> P<sub>est</sub>=0.1, R<sub>meas</sub>=2.0 → K≈0.05 (매우 부드러움)<br>
+            <strong>드론 자세:</strong> P<sub>est</sub>=0.5, R<sub>meas</sub>=0.5 → K=0.5 (균형)<br>
+            <strong>주식 가격:</strong> P<sub>est</sub>=2.0, R<sub>meas</sub>=0.1 → K≈0.95 (빠른 반응)
+        </div>
+    </div>
+</div>
+
+<script>
+    const sliders = {
+        predError: document.getElementById('predError'),
+        measError: document.getElementById('measError'),
+        prevEst: document.getElementById('prevEst'),
+        currMeas: document.getElementById('currMeas')
+    };
+
+    const displays = {
+        predErrorValue: document.getElementById('predErrorValue'),
+        measErrorValue: document.getElementById('measErrorValue'),
+        prevEstValue: document.getElementById('prevEstValue'),
+        currMeasValue: document.getElementById('currMeasValue'),
+        kalmanGain: document.getElementById('kalmanGain'),
+        finalEstimate: document.getElementById('finalEstimate'),
+        flowPrev: document.getElementById('flowPrev'),
+        flowMeas: document.getElementById('flowMeas'),
+        flowK: document.getElementById('flowK'),
+        flowCorrection: document.getElementById('flowCorrection'),
+        flowFinal: document.getElementById('flowFinal'),
+        flowError: document.getElementById('flowError')
+    };
+
+    const canvas = document.getElementById('visualCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function calculateKalman() {
+        const predError = parseFloat(sliders.predError.value);
+        const measError = parseFloat(sliders.measError.value);
+        const prevEst = parseFloat(sliders.prevEst.value);
+        const currMeas = parseFloat(sliders.currMeas.value);
+
+        // 칼만 이득 계산
+        const kalmanGain = predError / (predError + measError);
+        
+        // 최종 추정값 계산
+        const finalEstimate = prevEst + kalmanGain * (currMeas - prevEst);
+        
+        // 보정량
+        const correction = kalmanGain * (currMeas - prevEst);
+        
+        // 새로운 오차
+        const newError = (1 - kalmanGain) * predError;
+
+        // 디스플레이 업데이트
+        displays.predErrorValue.textContent = predError.toFixed(1);
+        displays.measErrorValue.textContent = measError.toFixed(1);
+        displays.prevEstValue.textContent = prevEst.toFixed(1);
+        displays.currMeasValue.textContent = currMeas.toFixed(1);
+        displays.kalmanGain.textContent = kalmanGain.toFixed(3);
+        displays.finalEstimate.textContent = finalEstimate.toFixed(2);
+        
+        displays.flowPrev.textContent = prevEst.toFixed(1);
+        displays.flowMeas.textContent = currMeas.toFixed(1);
+        displays.flowK.textContent = kalmanGain.toFixed(3);
+        displays.flowCorrection.textContent = correction.toFixed(2);
+        displays.flowFinal.textContent = finalEstimate.toFixed(2);
+        displays.flowError.textContent = newError.toFixed(3);
+
+        // 시각화 업데이트
+        drawVisualization(prevEst, currMeas, finalEstimate, kalmanGain);
+    }
+
+    function drawVisualization(prevEst, currMeas, finalEstimate, kalmanGain) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const centerY = canvas.height / 2;
+        const scale = 20; // 픽셀 단위 스케일
+        
+        // 배경 그리드
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= canvas.width; i += 50) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
+        }
+        for (let i = 0; i <= canvas.height; i += 50) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(canvas.width, i);
+            ctx.stroke();
+        }
+        
+        // 중심선
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(canvas.width, centerY);
+        ctx.stroke();
+        
+        // 막대 그래프
+        const barWidth = 80;
+        const spacing = 150;
+        const startX = 100;
+        
+        // 이전 추정값 (파란색)
+        const prevHeight = prevEst * scale;
+        ctx.fillStyle = '#3498db';
+        ctx.fillRect(startX, centerY - prevHeight, barWidth, prevHeight);
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('이전 추정', startX + barWidth/2, centerY + 20);
+        ctx.fillText(prevEst.toFixed(1), startX + barWidth/2, centerY - prevHeight - 10);
+        
+        // 현재 측정값 (빨간색)
+        const measHeight = currMeas * scale;
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(startX + spacing, centerY - measHeight, barWidth, measHeight);
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillText('현재 측정', startX + spacing + barWidth/2, centerY + 20);
+        ctx.fillText(currMeas.toFixed(1), startX + spacing + barWidth/2, centerY - measHeight - 10);
+        
+        // 최종 추정값 (초록색)
+        const finalHeight = finalEstimate * scale;
+        ctx.fillStyle = '#27ae60';
+        ctx.fillRect(startX + spacing * 2, centerY - finalHeight, barWidth, finalHeight);
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillText('최종 추정', startX + spacing * 2 + barWidth/2, centerY + 20);
+        ctx.fillText(finalEstimate.toFixed(2), startX + spacing * 2 + barWidth/2, centerY - finalHeight - 10);
+        
+        // 칼만 이득 표시
+        ctx.fillStyle = '#9b59b6';
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText(`K = ${kalmanGain.toFixed(3)}`, canvas.width - 100, 30);
+        
+        // 가중치 시각화
+        const weightY = 50;
+        const totalWidth = 200;
+        const predWidth = totalWidth * (1 - kalmanGain);
+        const measWidth = totalWidth * kalmanGain;
+        
+        ctx.fillStyle = '#3498db';
+        ctx.fillRect(canvas.width - 250, weightY, predWidth, 30);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(canvas.width - 250 + predWidth, weightY, measWidth, 30);
+        
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+        ctx.fillText(`${((1-kalmanGain)*100).toFixed(1)}%`, canvas.width - 250 + predWidth/2, weightY + 20);
+        ctx.fillText(`${(kalmanGain*100).toFixed(1)}%`, canvas.width - 250 + predWidth + measWidth/2, weightY + 20);
+        
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = '14px Arial';
+        ctx.fillText('예측 가중치', canvas.width - 250, weightY - 10);
+        ctx.fillText('측정 가중치', canvas.width - 250 + predWidth + measWidth/2, weightY - 10);
+    }
+
+    // 이벤트 리스너
+    Object.values(sliders).forEach(slider => {
+        slider.addEventListener('input', calculateKalman);
+    });
+
+    // 초기 계산
+    calculateKalman();
+</script>
+
+</body>
+</html>
