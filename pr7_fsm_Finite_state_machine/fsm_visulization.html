@@ -1,0 +1,436 @@
+# Robot FSM + 좌표 이동 시각화 HTML
+
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Robot FSM Visual Simulator</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+        background: #0f172a;
+        color: white;
+        overflow: hidden;
+    }
+
+    .wrapper {
+        display: flex;
+        height: 100vh;
+    }
+
+    .left-panel {
+        width: 320px;
+        background: #111827;
+        border-right: 2px solid #1e293b;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .left-panel h1 {
+        margin-bottom: 20px;
+        font-size: 24px;
+    }
+
+    .state-box {
+        margin-bottom: 16px;
+        padding: 16px;
+        border-radius: 14px;
+        background: #1e293b;
+        border: 2px solid #334155;
+        transition: 0.3s;
+    }
+
+    .state-box.active {
+        background: #22c55e;
+        color: black;
+        border-color: #22c55e;
+        transform: scale(1.02);
+        box-shadow: 0 0 18px rgba(34,197,94,0.6);
+    }
+
+    .state-title {
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .state-desc {
+        margin-top: 8px;
+        opacity: 0.8;
+    }
+
+    .info {
+        margin-top: 30px;
+        background: #1e293b;
+        padding: 16px;
+        border-radius: 14px;
+        line-height: 1.8;
+    }
+
+    .log-box {
+        margin-top: 30px;
+        background: #020617;
+        border-radius: 14px;
+        padding: 14px;
+        height: 280px;
+        overflow-y: auto;
+    }
+
+    .log {
+        margin-bottom: 10px;
+        color: #cbd5e1;
+        font-size: 14px;
+    }
+
+    .canvas-wrapper {
+        flex: 1;
+        position: relative;
+        background: #0b1220;
+    }
+
+    canvas {
+        background:
+            linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+        display: block;
+    }
+
+    .guide {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(15,23,42,0.9);
+        padding: 14px 18px;
+        border-radius: 12px;
+        border: 1px solid #334155;
+    }
+
+    .guide h2 {
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    .legend {
+        margin-top: 8px;
+        font-size: 14px;
+        opacity: 0.8;
+    }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+    <div class="left-panel">
+
+        <h1>🤖 Robot FSM</h1>
+
+        <div class="state-box active" id="IDLE">
+            <div class="state-title">IDLE</div>
+            <div class="state-desc">명령 대기 상태</div>
+        </div>
+
+        <div class="state-box" id="CALCULATING">
+            <div class="state-title">CALCULATING</div>
+            <div class="state-desc">목표 좌표 계산 중</div>
+        </div>
+
+        <div class="state-box" id="MOVING">
+            <div class="state-title">MOVING</div>
+            <div class="state-desc">목표 지점으로 이동 중</div>
+        </div>
+
+        <div class="state-box" id="COMPLETED">
+            <div class="state-title">COMPLETED</div>
+            <div class="state-desc">도착 완료</div>
+        </div>
+
+        <div class="info">
+            <div><strong>현재 상태:</strong> <span id="currentState">IDLE</span></div>
+            <div><strong>현재 좌표:</strong> (<span id="robotX">100</span>, <span id="robotY">100</span>)</div>
+            <div><strong>목표 좌표:</strong> (<span id="targetX">-</span>, <span id="targetY">-</span>)</div>
+        </div>
+
+        <div class="log-box" id="logBox">
+            <div class="log">시스템 시작 : 현재 상태 [IDLE]</div>
+        </div>
+
+    </div>
+
+    <div class="canvas-wrapper">
+
+        <div class="guide">
+            <h2>🖱 클릭해서 목표 좌표 지정</h2>
+            <div class="legend">파란 원 = 목표 좌표</div>
+            <div class="legend">초록 원 = 로봇</div>
+            <div class="legend">회색 점선 = 이동 경로</div>
+        </div>
+
+        <canvas id="canvas"></canvas>
+
+    </div>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth - 320;
+canvas.height = window.innerHeight;
+
+class RobotFSM {
+
+    constructor(){
+
+        this.state = "IDLE";
+
+        this.robot = {
+            x: 100,
+            y: 100,
+            radius: 18,
+            speed: 2
+        };
+
+        this.target = null;
+
+        this.path = [];
+
+        this.animationRunning = false;
+
+        this.render();
+    }
+
+    async update(event = null){
+
+        if(this.state === "IDLE"){
+
+            if(event === "TARGET_RECEIVED"){
+
+                this.log(`[IDLE -> CALCULATING] 목표 좌표 (${this.target.x}, ${this.target.y}) 수신`);
+
+                this.changeState("CALCULATING");
+
+                await this.sleep(1000);
+
+                await this.update();
+            }
+        }
+
+        else if(this.state === "CALCULATING"){
+
+            this.log(`[CALCULATING -> MOVING] 경로 계산 완료. 이동 시작`);
+
+            this.changeState("MOVING");
+
+            this.moveRobot();
+        }
+
+        else if(this.state === "MOVING"){
+
+            this.log(`[MOVING -> COMPLETED] 목표 좌표 도착 완료`);
+
+            this.changeState("COMPLETED");
+
+            await this.sleep(1200);
+
+            await this.update();
+        }
+
+        else if(this.state === "COMPLETED"){
+
+            this.log(`[COMPLETED -> IDLE] 작업 종료. 대기 상태 복귀`);
+
+            this.changeState("IDLE");
+        }
+    }
+
+    async moveRobot(){
+
+        if(this.animationRunning) return;
+
+        this.animationRunning = true;
+
+        while(true){
+
+            const dx = this.target.x - this.robot.x;
+            const dy = this.target.y - this.robot.y;
+
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if(distance < 2){
+                this.robot.x = this.target.x;
+                this.robot.y = this.target.y;
+
+                this.render();
+
+                this.animationRunning = false;
+
+                await this.update();
+
+                break;
+            }
+
+            const angle = Math.atan2(dy, dx);
+
+            this.robot.x += Math.cos(angle) * this.robot.speed;
+            this.robot.y += Math.sin(angle) * this.robot.speed;
+
+            this.path.push({
+                x: this.robot.x,
+                y: this.robot.y
+            });
+
+            this.render();
+
+            await this.sleep(10);
+        }
+    }
+
+    changeState(newState){
+
+        document.querySelectorAll(".state-box").forEach(box=>{
+            box.classList.remove("active");
+        });
+
+        document.getElementById(newState).classList.add("active");
+
+        this.state = newState;
+
+        document.getElementById("currentState").innerText = newState;
+    }
+
+    log(message){
+
+        const logBox = document.getElementById("logBox");
+
+        const div = document.createElement("div");
+
+        div.className = "log";
+
+        div.innerText = message;
+
+        logBox.appendChild(div);
+
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    render(){
+
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
+        this.drawPath();
+
+        if(this.target){
+            this.drawTarget();
+        }
+
+        this.drawRobot();
+
+        document.getElementById("robotX").innerText = Math.round(this.robot.x);
+        document.getElementById("robotY").innerText = Math.round(this.robot.y);
+    }
+
+    drawRobot(){
+
+        ctx.beginPath();
+        ctx.arc(this.robot.x, this.robot.y, this.robot.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#22c55e";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(this.robot.x + 6, this.robot.y - 5, 3, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(this.robot.x - 6, this.robot.y - 5, 3, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+    }
+
+    drawTarget(){
+
+        ctx.beginPath();
+        ctx.arc(this.target.x, this.target.y, 12, 0, Math.PI * 2);
+        ctx.fillStyle = "#3b82f6";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(this.target.x - 18, this.target.y);
+        ctx.lineTo(this.target.x + 18, this.target.y);
+        ctx.moveTo(this.target.x, this.target.y - 18);
+        ctx.lineTo(this.target.x, this.target.y + 18);
+        ctx.strokeStyle = "#60a5fa";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    drawPath(){
+
+        for(let i = 0; i < this.path.length; i++){
+
+            const p = this.path[i];
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255,255,255,0.4)";
+            ctx.fill();
+        }
+    }
+
+    sleep(ms){
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+}
+
+const robot = new RobotFSM();
+
+canvas.addEventListener("click", async (e)=>{
+
+    if(robot.state !== "IDLE") return;
+
+    const rect = canvas.getBoundingClientRect();
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    robot.target = {x,y};
+
+    document.getElementById("targetX").innerText = Math.round(x);
+    document.getElementById("targetY").innerText = Math.round(y);
+
+    robot.render();
+
+    await robot.update("TARGET_RECEIVED");
+});
+
+window.addEventListener("resize", ()=>{
+    canvas.width = window.innerWidth - 320;
+    canvas.height = window.innerHeight;
+    robot.render();
+});
+
+</script>
+
+</body>
+</html>
+```
+
+브라우저에서 실행하면:
+
+* 클릭한 좌표를 목표 지점으로 설정
+* FSM 상태가 IDLE → CALCULATING → MOVING → COMPLETED 로 변화
+* 로봇이 실제로 목표 좌표까지 이동
+* 지나온 위치에 발자국(path) 생성
+* 좌측 패널에서 상태 변화 및 로그 확인 가능
