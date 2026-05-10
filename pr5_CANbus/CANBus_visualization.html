@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>트랙터 & 로봇 CAN-BUS 정밀 시뮬레이터</title>
+    <style>
+        :root { --bus-color: #3498db; --node-color: #2c3e50; --packet-color: #f1c40f; }
+        body { background: #1a1a1a; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* 캔 버스 도로 */
+        .bus-container { width: 90%; margin: 150px auto; position: relative; height: 20px; background: #333; border-radius: 10px; border: 2px solid #555; }
+        .bus-label { position: absolute; top: 30px; width: 100%; text-align: center; color: #888; font-weight: bold; }
+
+        /* ECU 노드 */
+        .node { width: 120px; height: 80px; background: var(--node-color); border: 3px solid #7f8c8d; position: absolute; top: -110px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; transition: all 0.3s; }
+        .node.active { border-color: #2ecc71; box-shadow: 0 0 20px #2ecc71; transform: scale(1.1); }
+        .id-badge { background: #e67e22; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-top: 5px; }
+
+        /* 데이터 패킷 */
+        .packet { width: 80px; height: 40px; background: var(--packet-color); color: #000; position: absolute; top: -12px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.5); z-index: 100; 
+                  transform: translateZ(0); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; backface-visibility: hidden; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
+
+        /* 설명창 */
+        #info-panel { width: 600px; height: 100px; margin: 20px auto; background: #2c3e50; border-left: 10px solid #f1c40f; padding: 20px; display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1.5; border-radius: 0 10px 10px 0; }
+        
+        .controls { margin-bottom: 30px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #444; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        button:hover { background: #555; }
+    </style>
+</head>
+<body>
+
+    <h1>🚜 CAN-BUS 정밀 시뮬레이터 (정비 교육용)</h1>
+    
+    <div class="controls">
+        <button onclick="launchPacket(0x100, '엔진 온도: 85℃')">엔진 신호 전송 (0x100)</button>
+        <button onclick="launchPacket(0x200, '모터 각도: 90°')">로봇 명령 전송 (0x200)</button>
+        <button onclick="launchPacket(0x300, '경고: 연료 부족')">알 수 없는 장치 (0x300)</button>
+    </div>
+
+    <div id="info-panel">트랙터 시동 대기 중... 버튼을 눌러 신호를 쏘세요.</div>
+
+    <div class="bus-container">
+        <div class="bus-label">CAN HIGH / LOW BUS LINE</div>
+        
+        <div id="node-engine" class="node" style="left: 20%;">
+            <b>엔진 ECU</b>
+            <span class="id-badge">ID: 0x100</span>
+        </div>
+        
+        <div id="node-dash" class="node" style="left: 50%;">
+            <b>통합 계기판</b>
+            <span class="id-badge">ALL PASS</span>
+        </div>
+
+        <div id="node-robot" class="node" style="left: 80%;">
+            <b>로봇 관절</b>
+            <span class="id-badge">ID: 0x200</span>
+        </div>
+    </div>
+
+    <script>
+        const nodes = [
+            { id: 'node-engine', pos: 20, interested: [0x100], name: "엔진 ECU" },
+            { id: 'node-dash', pos: 50, interested: [0x100, 0x200, 0x300], name: "통합 계기판" },
+            { id: 'node-robot', pos: 80, interested: [0x200], name: "로봇 관절 모터" }
+        ];
+
+        async function launchPacket(canId, dataContent) {
+            const info = document.getElementById('info-panel');
+            const bus = document.querySelector('.bus-container');
+            
+            // 패킷 생성
+            const packet = document.createElement('div');
+            packet.className = 'packet';
+            packet.innerHTML = `ID:${hex(canId)}`;
+            packet.style.left = '0%';
+            bus.appendChild(packet);
+
+            info.innerHTML = `📡 <b>신호 발생:</b> ID 0x${canId.toString(16)} 데이터가 도로에 진입합니다.`;
+
+            // 부드러운 이동을 위한 CSS 트랜지션 설정
+            packet.style.transition = "left 0.1s linear";
+            
+            // 이동 로직
+            for (let i = 0; i <= 100; i++) {
+                packet.style.left = i + '%';
+                
+                // 노드 체크
+                for (const node of nodes) {
+                    if (i === node.pos) {
+                        const nodeEl = document.getElementById(node.id);
+                        nodeEl.classList.add('active');
+                        
+                        // 관심 있는 데이터인지 확인
+                        if (node.interested.includes(canId)) {
+                            // 일시 정지 및 설명
+                            info.innerHTML = `🎯 <b>[매칭 성공]</b> ${node.name}이(가) ID 0x${canId.toString(16)}를 인식했습니다! <br>내용: "${dataContent}"를 낚아챕니다.`;
+                            packet.style.background = '#2ecc71';
+                            
+                            // 빨려 들어가는 연출
+                            packet.style.transition = "all 0.5s";
+                            packet.style.transform = "translateY(-40px) scale(0.5)";
+                            packet.style.opacity = "0";
+                            
+                            await sleep(2000); // 2초간 정지 후 설명
+                            
+                            // 복구 및 이동 재개
+                            packet.style.transition = "left 0.1s linear";
+                            packet.style.transform = "translateY(0) scale(1)";
+                            packet.style.opacity = "1";
+                            packet.style.background = '#f1c40f';
+                        } else {
+                            info.innerHTML = `🚫 <b>[필터링]</b> ${node.name}: "내 이름표(ID)가 아니네? 통과!"`;
+                            await sleep(800);
+                        }
+                        nodeEl.classList.remove('active');
+                    }
+                }
+                await sleep(50); // 더 빠른 스텝으로 부드러움 개선
+            }
+            packet.remove();
+            info.innerHTML = "도로가 비었습니다. 다음 신호를 기다립니다.";
+        }
+
+        function hex(num) { return '0x' + num.toString(16); }
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+    </script>
+</body>
+</html>
