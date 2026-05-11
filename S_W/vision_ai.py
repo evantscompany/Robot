@@ -84,4 +84,3 @@ if __name__ == "__main__":
     # 실무 시뮬레이션: 카메라 0번으로 가동
     vision = MetaVisionSystem()
     vision.run_inference(source=0)
-    
