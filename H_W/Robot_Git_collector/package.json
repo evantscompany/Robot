@@ -1,0 +1,39 @@
+{
+  "name": "robot-ai-agent-system",
+  "version": "1.0.0",
+  "description": "AI Agent Pipeline for Robotics Code Analysis and Simulation",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "node server/index.js",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "install-all": "npm install && cd client && npm install",
+    "start": "npm run server"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "socket.io": "^4.7.4",
+    "simple-git": "^3.20.0",
+    "fs-extra": "^11.1.1",
+    "cheerio": "^1.0.0-rc.12",
+    "marked": "^9.1.6"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "robotics",
+    "ai-agent",
+    "github",
+    "ros",
+    "simulation",
+    "automation"
+  ],
+  "author": "Robot AI Agent Team",
+  "license": "MIT"
+}

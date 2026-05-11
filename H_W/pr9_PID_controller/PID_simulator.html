@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Professional PID Control: Anti-Windup & Saturation</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
+        body { background: #0a0a0a; color: #e5e7eb; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* 설정 패널 */
+        .sidebar {
+            width: 380px; background: #161b22; border-right: 1px solid #30363d;
+            padding: 25px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto;
+        }
+        h1 { font-size: 20px; color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        .group { background: #0d1117; padding: 15px; border-radius: 10px; border: 1px solid #30363d; }
+        .group-title { display: block; font-size: 12px; color: #8b949e; margin-bottom: 10px; text-transform: uppercase; }
+        
+        label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+        .val { color: #58a6ff; font-weight: bold; }
+        input[type="range"] { width: 100%; accent-color: #58a6ff; margin-bottom: 10px; }
+
+        /* 메인 화면 */
+        .main { flex: 1; display: flex; flex-direction: column; background: #010409; }
+        .display-area { height: 200px; border-bottom: 1px solid #30363d; position: relative; padding: 20px; }
+        .robot-track { height: 60px; background: #161b22; border-radius: 30px; position: relative; margin-top: 40px; border: 2px solid #30363d; }
+        .target-marker { position: absolute; top: -10px; bottom: -10px; width: 4px; background: #f85149; box-shadow: 0 0 15px #f85149; z-index: 2; }
+        .robot { 
+            position: absolute; top: 50%; left: 0; width: 50px; height: 34px; 
+            background: #238636; border-radius: 6px; transform: translateY(-50%); 
+            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; transition: background 0.2s;
+        }
+        .robot.saturated { background: #f85149; box-shadow: 0 0 20px #f85149; } /* 출력 제한 걸릴 때 빨간색 변함 */
+
+        canvas { flex: 1; }
+        .info-overlay { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; font-size: 12px; border: 1px solid #30363d; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h1>🛠️ 실무 제어 설정</h1>
+
+    <div class="group">
+        <span class="group-title">PID Gain (튜닝)</span>
+        <label>P (반응 강도) <span id="p_v" class="val">2.0</span></label>
+        <input type="range" id="p_in" min="0" max="10" step="0.1" value="2.0">
+        
+        <label>I (오차 누적) <span id="i_v" class="val">0.05</span></label>
+        <input type="range" id="i_in" min="0" max="0.5" step="0.01" value="0.05">
+        
+        <label>D (제동력) <span id="d_v" class="val">15.0</span></label>
+        <input type="range" id="d_in" min="0" max="50" step="0.5" value="15.0">
+    </div>
+
+    <div class="group" style="border-color: #f85149;">
+        <span class="group-title" style="color: #f85149;">Motor Limit (기계 한계)</span>
+        <label>최대 출력 제한 <span id="lim_v" class="val">3.0</span></label>
+        <input type="range" id="lim_in" min="0.5" max="10" step="0.5" value="3.0">
+        <p style="font-size: 11px; color: #8b949e;">모터가 낼 수 있는 최대 힘입니다. 이 값을 낮추면 제어기가 힘을 다 못 씁니다.</p>
+    </div>
+
+    <div class="group">
+        <span class="group-title">Option</span>
+        <label>
+            <span>Anti-Windup 적용</span>
+            <input type="checkbox" id="aw_in" checked>
+        </label>
+        <p style="font-size: 11px; color: #8b949e;">체크 해제 시 로봇이 목표를 지나쳐 요동칩니다.</p>
+    </div>
+
+    <button id="reset" style="padding:12px; background:#21262d; color:#c9d1d9; border:1px solid #30363d; border-radius:6px; cursor:pointer; font-weight:bold;">새 목표 지점 설정</button>
+</div>
+
+<div class="main">
+    <div class="display-area">
+        <div class="info-overlay">
+            <div>상태: <span id="st_txt">정상</span></div>
+            <div>현재 출력: <span id="out_txt">0.00</span></div>
+        </div>
+        <div class="robot-track">
+            <div id="target" class="target-marker"></div>
+            <div id="robot" class="robot">TRC</div>
+        </div>
+    </div>
+    <canvas id="chart"></canvas>
+</div>
+
+<script>
+    const robotEl = document.getElementById('robot');
+    const targetEl = document.getElementById('target');
+    const canvas = document.getElementById('chart');
+    const ctx = canvas.getContext('2d');
+
+    let targetX, currentX, velocity, lastError, integral, history = [];
+
+    function init() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight - 200;
+        targetX = 100 + Math.random() * (canvas.width - 200);
+        targetEl.style.left = targetX + 'px';
+        currentX = 50; velocity = 0; lastError = 0; integral = 0; history = [];
+    }
+
+    document.getElementById('reset').onclick = init;
+    window.onresize = init;
+    init();
+
+    function update() {
+        const kp = parseFloat(document.getElementById('p_in').value);
+        const ki = parseFloat(document.getElementById('i_in').value);
+        const kd = parseFloat(document.getElementById('d_in').value);
+        const limit = parseFloat(document.getElementById('lim_in').value);
+        const useAntiWindup = document.getElementById('aw_in').checked;
+
+        document.getElementById('p_v').innerText = kp.toFixed(1);
+        document.getElementById('i_v').innerText = ki.toFixed(2);
+        document.getElementById('d_v').innerText = kd.toFixed(1);
+        document.getElementById('lim_v').innerText = limit.toFixed(1);
+
+        const dt = 0.016;
+        const error = targetX - currentX;
+
+        // --- 실무 PID 로직 ---
+        const p_term = kp * error;
+        const d_term = kd * (error - lastError) / dt;
+        
+        // I 항 계산 (Anti-Windup 포함)
+        let potential_integral = integral + (error * dt);
+        let i_term = ki * potential_integral;
+
+        let raw_output = p_term + i_term + d_term;
+        let final_output = raw_output;
+
+        // 출력 제한 (Saturation)
+        let isSaturated = false;
+        if (final_output > limit) {
+            final_output = limit;
+            isSaturated = true;
+        } else if (final_output < -limit) {
+            final_output = -limit;
+            isSaturated = true;
+        }
+
+        // Anti-Windup: 출력이 포화 상태면 오차를 누적하지 않음
+        if (!useAntiWindup || !isSaturated) {
+            integral = potential_integral;
+        }
+
+        lastError = error;
+
+        // 물리 시뮬레이션
+        const mass = 50;
+        const acc = final_output / mass * 100;
+        velocity += acc;
+        velocity *= 0.92; // 기본 마찰
+        currentX += velocity * dt;
+
+        // UI 업데이트
+        robotEl.style.left = (currentX - 25) + 'px';
+        robotEl.className = isSaturated ? 'robot saturated' : 'robot';
+        document.getElementById('st_txt').innerText = isSaturated ? '출력 포화(Saturation)' : '정상 제어';
+        document.getElementById('st_txt').style.color = isSaturated ? '#f85149' : '#238636';
+        document.getElementById('out_txt').innerText = final_output.toFixed(2);
+
+        history.push({target: targetX, current: currentX, output: final_output});
+        if(history.length > 600) history.shift();
+
+        drawChart();
+        requestAnimationFrame(update);
+    }
+
+    function drawChart() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const midY = canvas.height / 2;
+
+        // 그리드
+        ctx.strokeStyle = '#161b22';
+        ctx.beginPath();
+        for(let i=0; i<canvas.width; i+=50) { ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); }
+        ctx.stroke();
+
+        // 목표선 (빨강)
+        ctx.strokeStyle = '#f85149'; ctx.setLineDash([5, 5]);
+        ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(canvas.width, midY); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 로봇 궤적 (초록)
+        ctx.strokeStyle = '#3fb950'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        history.forEach((d, i) => {
+            const x = canvas.width - (history.length - i) * 2;
+            const y = midY - (d.target - d.current) * 0.5;
+            if(i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+    }
+    update();
+</script>
+</body>
+</html>
