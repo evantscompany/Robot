@@ -86,3 +86,4 @@ coverage.xml
 *.temp
 *.bak
 *.cache
+*.pt
