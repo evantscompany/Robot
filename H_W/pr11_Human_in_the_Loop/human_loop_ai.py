@@ -83,3 +83,5 @@ except KeyboardInterrupt:
     print("시스템 종료")
 finally:
     client.disconnect()
+
+# 아두이노로 실습 진행
