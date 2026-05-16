@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 농번기 인력수요 및 임금 예측 대시보드</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #f1f5f9;
+            color: #334155;
+            padding: 24px;
+        }
+        header {
+            background: linear-gradient(135deg, #15803d, #166534);
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        header p {
+            font-size: 14px;
+            color: #bbf7d0;
+        }
+        
+        /* 필터 패널 스타일 */
+        .filter-panel {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+        .filter-group select {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #fff;
+            outline: none;
+            color: #334155;
+            transition: border-color 0.2s;
+        }
+        .filter-group select:focus {
+            border-color: #22c55e;
+        }
+        
+        /* KPI 카드 스타일 */
+        .kpi-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            flex: 1;
+            min-width: 240px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+            border-left: 5px solid #3b82f6;
+        }
+        .kpi-card.wage { border-left-color: #10b981; }
+        .kpi-card.avg-wage { border-left-color: #f59e0b; }
+        .kpi-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .kpi-value {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        /* 레이아웃 그리드 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        @media (min-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .panel {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+        }
+        .panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        .chart-box {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+        
+        /* 테이블 스타일 */
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 400px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-tech { background-color: #dbeafe; color: #1e40af; }
+        .badge-heavy { background-color: #fee2e2; color: #991b1b; }
+        .badge-repeat { background-color: #fef3c7; color: #92400e; }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌾 2025 농번기 상위 10대 품목 맞춤형 대시보드</h1>
+        <p>필요한 조건(품목, 작업, 형태, 월)을 선택하면 실시간으로 인력 수요 데이터와 예측 노동 비용 현황을 분석합니다.</p>
+    </header>
+
+    <div class="filter-panel">
+        <div class="filter-group">
+            <label for="cropSelect">농작물 품목 선택</label>
+            <select id="cropSelect" onchange="onCropChange()">
+                <option value="ALL">전체 품목 보기</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="opSelect">세부 농작업</label>
+            <select id="opSelect" onchange="updateDashboard()">
+                <option value="ALL">전체 작업 보기</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="typeSelect">일의 형태 (분류)</label>
+            <select id="typeSelect" onchange="updateDashboard()">
+                <option value="ALL">전체 형태 보기</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="monthSelect">시기 (월별)</label>
+            <select id="monthSelect" onchange="updateDashboard()">
+                <option value="ALL">연간 전체 보기</option>
+                <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+                <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+                <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+                <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <div class="kpi-title">총 고용 인력 수요</div>
+            <div class="kpi-value" id="kpiDemand">0 만 명</div>
+        </div>
+        <div class="kpi-card wage">
+            <div class="kpi-title">총 예상 노동 임금</div>
+            <div class="kpi-value" id="kpiWage">0.0 억 원</div>
+        </div>
+        <div class="kpi-card avg-wage">
+            <div class="kpi-title">해당 조건 평균 단가</div>
+            <div class="kpi-value" id="kpiAvgWage">0 원</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="panel">
+            <div class="panel-title">📅 월별 인력 수요 분석 흐름 (만 명)</div>
+            <div class="chart-box">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">📊 선택 조건 내 품목별 인력 수요 비중</div>
+            <div class="chart-box">
+                <canvas id="cropChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">📋 상세 데이터 원본 목록</div>
+        <div class="table-wrapper">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>품목명</th>
+                        <th>농작업</th>
+                        <th>일의 형태 (분류)</th>
+                        <th>노동 단가 (원)</th>
+                        <th>진행 월</th>
+                        <th>수요 (만 명)</th>
+                        <th>예측 임금 (억 원)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 1. 원본 Raw Data 완전체 내장
+        const rawSource = [
+            {"crop": "사과", "operation": "전정", "monthly_demand": [7, 22, 16, 0, 0, 1, 0, 0, 0, 0, 0, 1]},
+            {"crop": "사과", "operation": "적과", "monthly_demand": [0, 0, 0, 8, 60, 28, 2, 0, 0, 0, 0, 0]},
+            {"crop": "사과", "operation": "수확", "monthly_demand": [0, 0, 0, 0, 0, 0, 3, 4, 21, 37, 39, 2]},
+            {"crop": "복숭아", "operation": "전정", "monthly_demand": [0, 24, 12, 7, 4, 0, 0, 0, 0, 0, 0, 0]},
+            {"crop": "복숭아", "operation": "적과", "monthly_demand": [0, 0, 0, 9, 34, 8, 2, 2, 0, 0, 0, 0]},
+            {"crop": "복숭아", "operation": "봉지씌우기", "monthly_demand": [0, 0, 0, 0, 6, 37, 8, 1, 0, 0, 0, 0]},
+            {"crop": "복숭아", "operation": "수확", "monthly_demand": [0, 0, 0, 0, 0, 10, 13, 16, 11, 3, 0, 0]},
+            {"crop": "마늘", "operation": "수확", "monthly_demand": [0, 0, 0, 2, 27, 47, 2, 0, 0, 0, 1, 0]},
+            {"crop": "마늘", "operation": "파종", "monthly_demand": [0, 0, 0, 0, 0, 0, 0, 3, 19, 29, 18, 0]},
+            {"crop": "고추", "operation": "정식", "monthly_demand": [0, 2, 5, 24, 25, 2, 0, 1, 4, 1, 0, 0]},
+            {"crop": "고추", "operation": "수확", "monthly_demand": [0, 1, 1, 1, 1, 4, 11, 25, 20, 8, 1, 1]},
+            {"crop": "포도", "operation": "순지르기", "monthly_demand": [0, 0, 3, 9, 7, 2, 1, 0, 0, 0, 0, 0]},
+            {"crop": "포도", "operation": "알솎기", "monthly_demand": [0, 0, 0, 3, 15, 15, 0, 0, 0, 0, 0, 0]},
+            {"crop": "포도", "operation": "봉지씌우기", "monthly_demand": [0, 0, 0, 0, 3, 17, 6, 0, 0, 0, 0, 0]},
+            {"crop": "포도", "operation": "수확", "monthly_demand": [0, 0, 0, 0, 0, 2, 6, 8, 9, 5, 0, 0]},
+            {"crop": "양파", "operation": "수확", "monthly_demand": [0, 0, 0, 6, 15, 31, 3, 0, 0, 1, 0, 0]},
+            {"crop": "양파", "operation": "정식", "monthly_demand": [0, 0, 0, 0, 0, 1, 1, 0, 3, 24, 25, 0]},
+            {"crop": "감자", "operation": "파종", "monthly_demand": [0, 2, 15, 13, 4, 1, 0, 1, 4, 1, 1, 1]},
+            {"crop": "감자", "operation": "수확", "monthly_demand": [0, 1, 1, 2, 6, 15, 9, 11, 2, 1, 5, 1]},
+            {"crop": "배", "operation": "수분", "monthly_demand": [0, 0, 1, 14, 3, 0, 0, 0, 0, 0, 0, 0]},
+            {"crop": "배", "operation": "적과", "monthly_demand": [0, 0, 0, 2, 17, 2, 0, 0, 0, 0, 0, 0]},
+            {"crop": "배", "operation": "봉지씌우기", "monthly_demand": [0, 0, 0, 1, 5, 15, 1, 0, 0, 0, 0, 0]},
+            {"crop": "배", "operation": "수확", "monthly_demand": [0, 0, 0, 0, 0, 0, 0, 2, 9, 10, 4, 0]},
+            {"crop": "배추", "operation": "정식", "monthly_demand": [0, 0, 2, 3, 2, 5, 3, 9, 13, 1, 0, 0]},
+            {"crop": "배추", "operation": "수확", "monthly_demand": [1, 2, 1, 0, 1, 4, 3, 5, 3, 5, 14, 3]},
+            {"crop": "무", "operation": "파종", "monthly_demand": [0, 0, 0, 0, 3, 1, 1, 6, 6, 1, 0, 0]},
+            {"crop": "무", "operation": "수확", "monthly_demand": [2, 3, 3, 3, 0, 0, 0, 4, 0, 3, 6, 5]}
+        ];
+
+        let dataset = [];
+        let chartInstance1 = null;
+        let chartInstance2 = null;
+
+        // 2. 비즈니스 규칙 분류 가공함수
+        function getWorkTypeAndWage(op) {
+            if (["전정", "수분", "알솎기", "순지르기"].includes(op)) {
+                return { type: "전문기술직 (상용/단기)", wage: 150000 };
+            } else if (["수확", "파종"].includes(op)) {
+                return { type: "일반고강도직 (일용)", wage: 135000 };
+            } else {
+                return { type: "일반반복직 (임시/계절)", wage: 120000 };
+            }
+        }
+
+        // 3. 데이터 구조 롱 포맷 전개 및 데이터셋 전처리
+        rawSource.forEach(item => {
+            const meta = getWorkTypeAndWage(item.operation);
+            item.monthly_demand.forEach((demand, idx) => {
+                if (demand > 0) { // 수요가 발생하는 월만 타겟팅
+                    const predWageBilliard = (demand * 10000 * meta.wage) / 100000000;
+                    dataset.push({
+                        crop: item.crop,
+                        operation: item.operation,
+                        work_type: meta.type,
+                        wage: meta.wage,
+                        month: idx + 1,
+                        demand: demand,
+                        predicted_wage: predWageBilliard
+                    });
+                }
+            });
+        });
+
+        // 4. 초기화 - 동적 드롭다운 옵션 채우기
+        window.onload = function() {
+            const cropSelect = document.getElementById('cropSelect');
+            const opSelect = document.getElementById('opSelect');
+            const typeSelect = document.getElementById('typeSelect');
+
+            const uniqueCrops = [...new Set(dataset.map(d => d.crop))].sort();
+            const uniqueOps = [...new Set(dataset.map(d => d.operation))].sort();
+            const uniqueTypes = [...new Set(dataset.map(d => d.work_type))].sort();
+
+            uniqueCrops.forEach(c => cropSelect.add(new Option(c, c)));
+            uniqueOps.forEach(o => opSelect.add(new Option(o, o)));
+            uniqueTypes.forEach(t => typeSelect.add(new Option(t, t)));
+
+            updateDashboard();
+        };
+
+        // 품목 변경 시 상응하는 세부 농작업 드롭다운 동적 재구성
+        function onCropChange() {
+            const selectedCrop = document.getElementById('cropSelect').value;
+            const opSelect = document.getElementById('opSelect');
+            
+            // 기존 옵션 리셋
+            opSelect.innerHTML = '<option value="ALL">전체 작업 보기</option>';
+            
+            let targetOps = [];
+            if(selectedCrop === 'ALL') {
+                targetOps = [...new Set(dataset.map(d => d.operation))];
+            } else {
+                targetOps = [...new Set(dataset.filter(d => d.crop === selectedCrop).map(d => d.operation))];
+            }
+            targetOps.sort().forEach(o => opSelect.add(new Option(o, o)));
+            
+            updateDashboard();
+        }
+
+        // 5. 핵심 연동 및 렌더링 파이프라인
+        function updateDashboard() {
+            const selectedCrop = document.getElementById('cropSelect').value;
+            const selectedOp = document.getElementById('opSelect').value;
+            const selectedType = document.getElementById('typeSelect').value;
+            const selectedMonth = document.getElementById('monthSelect').value;
+
+            // 다중 필터 적용
+            const filtered = dataset.filter(d => {
+                if (selectedCrop !== 'ALL' && d.crop !== selectedCrop) return false;
+                if (selectedOp !== 'ALL' && d.operation !== selectedOp) return false;
+                if (selectedType !== 'ALL' && d.work_type !== selectedType) return false;
+                if (selectedMonth !== 'ALL' && d.month != parseInt(selectedMonth)) return false;
+                return true;
+            });
+
+            // 연산 집계
+            let totalDemand = 0;
+            let totalWage = 0;
+            let sumWageForAvg = 0;
+            let countForAvg = 0;
+
+            filtered.forEach(d => {
+                totalDemand += d.demand;
+                totalWage += d.predicted_wage;
+                sumWageForAvg += d.wage;
+                countForAvg++;
+            });
+            const avgWage = countForAvg > 0 ? Math.round(sumWageForAvg / countForAvg) : 0;
+
+            // KPI UI 업데이트
+            document.getElementById('kpiDemand').innerText = totalDemand.toLocaleString() + ' 만 명';
+            document.getElementById('kpiWage').innerText = totalWage.toFixed(1) + ' 억 원';
+            document.getElementById('kpiAvgWage').innerText = avgWage.toLocaleString() + ' 원';
+
+            // 테이블 바인딩
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            if(filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="no-data">선택한 조건에 해당하는 세부 농작업 내역이 없습니다.</td></tr>`;
+            } else {
+                filtered.forEach(d => {
+                    let badgeClass = 'badge-tech';
+                    if (d.work_type.includes('고강도')) badgeClass = 'badge-heavy';
+                    if (d.work_type.includes('반복')) badgeClass = 'badge-repeat';
+
+                    const row = `<tr>
+                        <td><strong>${d.crop}</strong></td>
+                        <td>${d.operation}</td>
+                        <td><span class="badge ${badgeClass}">${d.work_type}</span></td>
+                        <td>${d.wage.toLocaleString()}원</td>
+                        <td>${d.month}월</td>
+                        <td>${d.demand} 만 명</td>
+                        <td><span style="color:#16a34a; font-weight:600;">${d.predicted_wage.toFixed(2)}억</span></td>
+                    </tr>`;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+            }
+
+            // 차트 렌더링 호출
+            renderMonthlyChart(filtered);
+            renderCropChart(filtered);
+        }
+
+        // 6. 차트 1: 월별 추이 그래프 (Chart.js)
+        function renderMonthlyChart(data) {
+            let monthlyAgg = Array(12).fill(0);
+            data.forEach(d => {
+                monthlyAgg[d.month - 1] += d.demand;
+            });
+
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            if (chartInstance1) chartInstance1.destroy(); // 잔상 방지 리셋
+
+            chartInstance1 = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+                    datasets: [{
+                        label: '인력 수요 (만 명)',
+                        data: monthlyAgg,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // 7. 차트 2: 품목별 비중 도넛 그래프 (Chart.js)
+        function renderCropChart(data) {
+            let cropAgg = {};
+            data.forEach(d => {
+                if(!cropAgg[d.crop]) cropAgg[d.crop] = 0;
+                cropAgg[d.crop] += d.demand;
+            });
+
+            const labels = Object.keys(cropAgg);
+            const values = Object.values(cropAgg);
+
+            const ctx = document.getElementById('cropChart').getContext('2d');
+            if (chartInstance2) chartInstance2.destroy();
+
+            chartInstance2 = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#ef4444', '#f97316', '#f59e0b', '#10b981', 
+                            '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', 
+                            '#ec4899', '#64748b'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12 } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
