@@ -48,6 +48,16 @@ class MetaVisionSystem:
         실시간 스트리밍 분석 (카메라 또는 영상 파일)
         """
         cap = cv2.VideoCapture(source)
+        
+        # 카메라 해상도 줄이기
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) #1280 , 640
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720) #720 ,480
+
+        # 창 크기 설정
+        cv2.namedWindow("MetaFarmer Vision AI System", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("MetaFarmer Vision AI System", 800, 600)
+
+
         if not cap.isOpened():
             logger.error("카메라를 열 수 없습니다.")
             return
