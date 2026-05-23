@@ -53,8 +53,10 @@ void loop() {
     if (doc.containsKey("angle_x")) {
       int angleX = doc["angle_x"];
 
+      
       // 구동 범위 제한 제어
-      if (angleX >= 0 && angleX <= 180) servoX.write(angleX);
+      angleX = constrain(angleX,30,150);
+      servoX.write(angleX);
     }
   }
 }
