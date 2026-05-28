@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PR3: 자동 냉각 팬 제어 시스템 - 시각화</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .temperature-monitor {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .monitor-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .temperature-display {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .temp-value {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: #4facfe;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .temp-status {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .temperature-bar {
+            width: 100%;
+            height: 40px;
+            background: linear-gradient(90deg, #00f2fe 0%, #4facfe 50%, #ff6b6b 100%);
+            border-radius: 10px;
+            position: relative;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .temp-pointer {
+            position: absolute;
+            width: 4px;
+            height: 100%;
+            background: white;
+            top: 0;
+            left: 40%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            transition: left 0.5s ease;
+        }
+
+        .temp-scale {
+            display: flex;
+            justify-content: space-between;
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .control-system {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .component-box {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .component-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .component-value {
+            font-size: 1.3em;
+            font-family: 'Courier New', monospace;
+        }
+
+        .fan-speed-display {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .fan-animation {
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            margin: 15px;
+            position: relative;
+        }
+
+        .fan-blade {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+        }
+
+        .fan-blade::before,
+        .fan-blade::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 60px;
+            background: #4facfe;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .fan-blade::after {
+            transform: translate(-50%, -50%) rotate(90deg);
+        }
+
+        .fan-speed-off {
+            animation: none !important;
+            opacity: 0.3;
+        }
+
+        .fan-speed-slow {
+            animation: spin 3s linear infinite !important;
+        }
+
+        .fan-speed-medium {
+            animation: spin 1.5s linear infinite !important;
+        }
+
+        .fan-speed-fast {
+            animation: spin 0.8s linear infinite !important;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .servo-valve {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .servo-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .servo-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .servo-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            border-radius: 15px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .warning-light {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 0 auto;
+            transition: all 0.3s ease;
+        }
+
+        .warning-light.danger {
+            background: #ff6b6b;
+            box-shadow: 0 0 20px #ff6b6b;
+            animation: danger-blink 0.5s ease-in-out infinite;
+        }
+
+        @keyframes danger-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .system-architecture {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .architecture-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .flow-diagram {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .flow-box {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            flex: 1;
+            min-width: 120px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .arrow {
+            font-size: 1.5em;
+            color: #4facfe;
+        }
+
+        .control-logic {
+            background: #f9f9f9;
+            border-left: 4px solid #4facfe;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .control-logic h4 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+
+        .logic-rule {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .logic-rule::before {
+            content: '●';
+            color: #4facfe;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px;
+        }
+
+        .timeline-item {
+            display: flex;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .timeline-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 40px;
+            top: 80px;
+            width: 2px;
+            height: 60px;
+            background: linear-gradient(to bottom, #4facfe, transparent);
+        }
+
+        .timeline-number {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5em;
+            flex-shrink: 0;
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .timeline-content {
+            margin-left: 30px;
+            padding-top: 10px;
+            flex: 1;
+        }
+
+        .timeline-content h4 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .timeline-content p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .features {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .features-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .feature-card h4 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            line-height: 1.6;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+            margin: 0 10px;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            .main-dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .temp-value {
+                font-size: 2.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>❄️ 자동 냉각 팬 제어 시스템</h1>
+            <p>온도 기반 자동 냉각 및 서보모터 밸브 제어</p>
+        </div>
+
+        <div class="main-dashboard">
+            <div class="temperature-monitor">
+                <h2 class="monitor-title">🌡️ 온도 모니터링</h2>
+                
+                <div class="temperature-display">
+                    <div class="temp-status" id="temp-status">정상 범위</div>
+                    <div class="temp-value" id="temp-value">35.2°C</div>
+                </div>
+
+                <div class="temperature-bar">
+                    <div class="temp-pointer" id="temp-pointer"></div>
+                </div>
+                <div class="temp-scale">
+                    <span>0°C</span>
+                    <span>40°C</span>
+                    <span>80°C (위험)</span>
+                </div>
+
+                <div class="component-box" style="margin-top: 25px;">
+                    <span class="component-name">🔧 센서 타입</span>
+                    <span class="component-value">가변저항</span>
+                </div>
+                <div class="component-box">
+                    <span class="component-name">📍 GPIO</span>
+                    <span class="component-value">GPIO 4</span>
+                </div>
+            </div>
+
+            <div class="control-system">
+                <h2 class="monitor-title">⚙️ 냉각 제어 시스템</h2>
+
+                <div style="text-align: center;">
+                    <p style="color: #666; margin-bottom: 15px;">팬 속도</p>
+                    <div class="fan-animation">
+                        <div class="fan-blade" id="fan-blade"></div>
+                    </div>
+                    <div style="color: #333; font-weight: bold; margin-top: 10px;" id="fan-status">정지</div>
+                </div>
+
+                <div class="servo-valve">
+                    <div class="servo-title">📌 서보모터 밸브 (0-180°)</div>
+                    <div class="servo-bar">
+                        <div class="servo-fill" id="servo-fill" style="width: 0%;">0°</div>
+                    </div>
+                    <p style="color: #999; font-size: 0.9em; margin-top: 8px;">냉각액 분출량: <span id="servo-value">0</span>%</p>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <p style="color: #666; margin-bottom: 10px;">경고 상태</p>
+                    <div class="warning-light" id="warning-light"></div>
+                    <p style="color: #333; font-weight: bold; margin-top: 10px;" id="warning-text">정상</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="system-architecture">
+            <h2 class="architecture-title">🔄 시스템 구조</h2>
+            <div class="flow-diagram">
+                <div class="flow-box">가변저항</div>
+                <div class="arrow">→</div>
+                <div class="flow-box">ESP32</div>
+                <div class="arrow">→</div>
+                <div class="flow-box">FastAPI</div>
+                <div class="arrow">→</div>
+                <div class="flow-box">웹 대시보드</div>
+            </div>
+
+            <div class="control-logic">
+                <h4>🤖 자동 제어 로직</h4>
+                <div class="logic-rule">온도 < 30°C: 팬 정지</div>
+                <div class="logic-rule">30°C ≤ 온도 < 50°C: 팬 낮은 속도 (50%)</div>
+                <div class="logic-rule">50°C ≤ 온도 < 70°C: 팬 중간 속도 (75%)</div>
+                <div class="logic-rule">70°C ≤ 온도 < 80°C: 팬 최대 속도 (100%)</div>
+                <div class="logic-rule">온도 ≥ 80°C: 자동 정지 + 경고음</div>
+                <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
+                <div class="logic-rule">서보모터: 온도에 비례하여 0°~180° 회전</div>
+                <div class="logic-rule">밸브 개방도: 온도% ÷ 100 × 180°</div>
+            </div>
+        </div>
+
+        <div style="background: white; border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); margin-bottom: 30px;">
+            <h2 style="font-size: 1.5em; color: #333; margin-bottom: 25px; text-align: center;">📋 동작 흐름</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-number">1</div>
+                    <div class="timeline-content">
+                        <h4>온도 측정</h4>
+                        <p>ESP32의 ADC(아날로그-디지털 변환기)가 가변저항 값을 읽어 온도로 변환합니다. (0-4095 → 0-100°C)</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-number">2</div>
+                    <div class="timeline-content">
+                        <h4>LED 판단</h4>
+                        <p>온도가 80°C를 초과하면 경고 LED를 점등하고, 그렇지 않으면 소등합니다.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-number">3</div>
+                    <div class="timeline-content">
+                        <h4>팬 속도 계산</h4>
+                        <p>온도에 따라 팬의 PWM(펄스 폭 변조) 값을 계산합니다. 온도가 높을수록 더 빠르게 회전합니다.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-number">4</div>
+                    <div class="timeline-content">
+                        <h4>서보모터 제어</h4>
+                        <p>온도에 비례하여 서보모터를 회전시켜 냉각액 밸브의 개방도를 조절합니다.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-number">5</div>
+                    <div class="timeline-content">
+                        <h4>데이터 전송</h4>
+                        <p>현재 온도, 팬 속도, 밸브 각도를 FastAPI 서버로 전송합니다.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-number">6</div>
+                    <div class="timeline-content">
+                        <h4>데이터 저장</h4>
+                        <p>SQLite 데이터베이스에 타임스탐프와 함께 저장되어 나중에 분석할 수 있습니다.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-number">7</div>
+                    <div class="timeline-content">
+                        <h4>실시간 시각화</h4>
+                        <p>웹 대시보드에서 그래프와 게이지로 실시간 상태를 표시합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="features">
+            <h2 class="features-title">✨ 주요 기능</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🌡️ 온도 측정</h4>
+                    <p>가변저항으로 시뮬레이션된 온도를 실시간으로 측정합니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⚡ 자동 냉각</h4>
+                    <p>온도에 따라 팬 속도를 자동으로 조절합니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🚰 밸브 제어</h4>
+                    <p>서보모터로 냉각액 분출량을 비례 제어합니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔔 과열 경고</h4>
+                    <p>80°C 이상 시 LED 경고등을 켜고 자동으로 정지합니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💾 데이터 로깅</h4>
+                    <p>모든 센서 데이터를 SQLite에 저장합니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 실시간 그래프</h4>
+                    <p>웹 대시보드에서 온도 추이를 차트로 표시합니다.</p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button onclick="simulateTemperature()">온도 시뮬레이션</button>
+                <button onclick="resetSystem()">시스템 초기화</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTemp = 35.2;
+        let simulating = false;
+
+        function updateDisplay(temp) {
+            currentTemp = Math.min(100, Math.max(0, temp));
+            
+            // 온도 표시
+            document.getElementById('temp-value').textContent = currentTemp.toFixed(1) + '°C';
+            
+            // 온도 포인터 위치 (0~80도 범위에서 0~100%)
+            const pointerPos = (currentTemp / 80) * 100;
+            document.getElementById('temp-pointer').style.left = Math.min(100, pointerPos) + '%';
+            
+            // 상태 표시
+            let status = '정상 범위';
+            let statusColor = '#4facfe';
+            if (currentTemp >= 80) {
+                status = '⚠️ 위험!';
+                statusColor = '#ff6b6b';
+            } else if (currentTemp >= 70) {
+                status = '⚠️ 높음';
+                statusColor = '#ff9f43';
+            } else if (currentTemp >= 50) {
+                status = '↑ 상승 중';
+                statusColor = '#ffa502';
+            }
+            document.getElementById('temp-status').textContent = status;
+            document.getElementById('temp-status').style.color = statusColor;
+
+            // 팬 속도 계산
+            let fanSpeed = 'OFF';
+            let fanClass = 'fan-speed-off';
+            let fanPercent = 0;
+            
+            if (currentTemp >= 30) {
+                if (currentTemp < 50) {
+                    fanSpeed = '낮음 (50%)';
+                    fanClass = 'fan-speed-slow';
+                    fanPercent = 50;
+                } else if (currentTemp < 70) {
+                    fanSpeed = '중간 (75%)';
+                    fanClass = 'fan-speed-medium';
+                    fanPercent = 75;
+                } else if (currentTemp < 80) {
+                    fanSpeed = '최대 (100%)';
+                    fanClass = 'fan-speed-fast';
+                    fanPercent = 100;
+                } else {
+                    fanSpeed = '정지 (과열)';
+                    fanClass = 'fan-speed-off';
+                    fanPercent = 0;
+                }
+            }
+            
+            const fanBlade = document.getElementById('fan-blade');
+            fanBlade.className = 'fan-blade ' + fanClass;
+            document.getElementById('fan-status').textContent = fanSpeed;
+
+            // 서보모터 계산 (0-180도)
+            const servoAngle = (currentTemp / 100) * 180;
+            const servoPercent = (currentTemp / 100) * 100;
+            document.getElementById('servo-fill').style.width = servoPercent + '%';
+            document.getElementById('servo-fill').textContent = servoAngle.toFixed(0) + '°';
+            document.getElementById('servo-value').textContent = servoPercent.toFixed(0);
+
+            // 경고 표시
+            const warningLight = document.getElementById('warning-light');
+            const warningText = document.getElementById('warning-text');
+            
+            if (currentTemp >= 80) {
+                warningLight.classList.add('danger');
+                warningText.textContent = '🚨 과열!';
+                warningText.style.color = '#ff6b6b';
+            } else {
+                warningLight.classList.remove('danger');
+                warningText.textContent = '✓ 정상';
+                warningText.style.color = '#4facfe';
+            }
+        }
+
+        function simulateTemperature() {
+            if (simulating) return;
+            simulating = true;
+
+            let direction = 1;
+            const interval = setInterval(() => {
+                currentTemp += direction * 2;
+                
+                if (currentTemp >= 85) direction = -1;
+                if (currentTemp <= 20) direction = 1;
+                
+                updateDisplay(currentTemp);
+            }, 300);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                simulating = false;
+            }, 20000);
+        }
+
+        function resetSystem() {
+            currentTemp = 35.2;
+            updateDisplay(currentTemp);
+        }
+
+        // 초기 디스플레이
+        updateDisplay(currentTemp);
+    </script>
+</body>
+</html>

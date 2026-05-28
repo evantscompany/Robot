@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PR11: 인간-AI 루프 제어 시스템 - 시각화</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-title {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #11998e;
+            padding-bottom: 12px;
+        }
+
+        .voice-input-area {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .microphone-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            color: white;
+            font-size: 3em;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .microphone-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(17, 153, 142, 0.6);
+        }
+
+        .microphone-button:active {
+            transform: scale(0.95);
+        }
+
+        .microphone-button.recording {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e72 100%);
+            animation: pulse-record 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse-record {
+            0%, 100% { box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4); }
+            50% { box-shadow: 0 8px 25px rgba(255, 107, 107, 0.8); }
+        }
+
+        .status-text {
+            color: #666;
+            margin-top: 15px;
+            font-size: 0.95em;
+        }
+
+        .transcript-box {
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 80px;
+        }
+
+        .transcript-label {
+            color: #666;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .transcript-text {
+            color: #333;
+            line-height: 1.6;
+            font-style: italic;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .ai-analysis {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .analysis-title {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #11998e;
+            padding-bottom: 12px;
+        }
+
+        .analysis-box {
+            background: #f9f9f9;
+            border-left: 4px solid #11998e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .analysis-label {
+            color: #666;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .analysis-content {
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+            width: 0%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .approval-section {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .approval-question {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .approval-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .approval-btn {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            flex: 1;
+            max-width: 150px;
+        }
+
+        .approval-btn.yes {
+            background: white;
+            color: #11998e;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .approval-btn.yes:hover {
+            transform: scale(1.05);
+        }
+
+        .approval-btn.no {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .approval-btn.no:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .system-flow {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .flow-title {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+            border-bottom: 2px solid #11998e;
+            padding-bottom: 12px;
+        }
+
+        .loop-diagram {
+            position: relative;
+            margin: 30px 0;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loop-step {
+            position: absolute;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .loop-step:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%); }
+        .loop-step:nth-child(2) { bottom: 30%; left: 0; }
+        .loop-step:nth-child(3) { bottom: 0; left: 50%; transform: translateX(-50%); }
+        .loop-step:nth-child(4) { bottom: 30%; right: 0; }
+
+        .loop-arrow {
+            position: absolute;
+            font-size: 1.5em;
+            color: #11998e;
+            animation: arrow-move 2s ease-in-out infinite;
+        }
+
+        .arrow1 { top: 5%; left: 45%; animation-delay: 0s; }
+        .arrow2 { top: 35%; left: 15%; animation-delay: 0.5s; }
+        .arrow3 { bottom: 5%; right: 45%; animation-delay: 1s; }
+        .arrow4 { top: 35%; right: 15%; animation-delay: 1.5s; }
+
+        @keyframes arrow-move {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .processing-steps {
+            background: #f9f9f9;
+            border-left: 4px solid #11998e;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .step-description {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .comparison-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .human-in-loop-box {
+            background: linear-gradient(135deg, rgba(17, 153, 142, 0.1), rgba(56, 239, 125, 0.1));
+            border: 2px solid #11998e;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .human-in-loop-box h4 {
+            color: #11998e;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+
+        .human-in-loop-box ul {
+            margin-left: 20px;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .human-in-loop-box li {
+            margin-bottom: 8px;
+        }
+
+        .features {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .features-title {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+            border-bottom: 2px solid #11998e;
+            padding-bottom: 12px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .feature-card h4 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+            margin: 0 10px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(17, 153, 142, 0.6);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .loop-diagram {
+                height: auto;
+                flex-direction: column;
+            }
+
+            .loop-step {
+                position: static !important;
+                transform: none !important;
+                margin: 15px auto;
+            }
+
+            .loop-arrow {
+                position: static !important;
+                display: inline-block;
+                margin: 0 10px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👤 인간-AI 루프 제어 시스템 (Human in the Loop)</h1>
+            <p>음성 명령 → AI 분석 → 사람 승인 → 로봇 실행</p>
+        </div>
+
+        <div class="main-layout">
+            <!-- 음성 입력 패널 -->
+            <div class="panel">
+                <h2 class="panel-title">🎤 음성 입력</h2>
+                
+                <div class="voice-input-area">
+                    <button class="microphone-button" id="microphone-btn" onclick="toggleMicrophone()">
+                        🎤
+                    </button>
+                    <div class="status-text" id="status-text">클릭해서 음성 입력</div>
+                </div>
+
+                <div class="transcript-box">
+                    <div class="transcript-label">📝 인식된 음성</div>
+                    <div class="transcript-text" id="transcript">음성을 입력하면 여기에 텍스트로 변환됩니다...</div>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button onclick="simulateVoiceInput('팬을 켜줘')" style="flex: 1;">시뮬레이션: 팬 켜기</button>
+                    <button onclick="clearVoiceInput()" style="flex: 1;">초기화</button>
+                </div>
+            </div>
+
+            <!-- AI 분석 패널 -->
+            <div class="panel">
+                <h2 class="panel-title">🤖 AI 분석 결과</h2>
+                
+                <div class="analysis-box">
+                    <div class="analysis-label">의도 분석</div>
+                    <div class="analysis-content" id="intention">명령의 의도가 분석됩니다...</div>
+                </div>
+
+                <div class="analysis-box">
+                    <div class="analysis-label">권장 행동</div>
+                    <div class="analysis-content" id="recommended-action">추천 행동이 표시됩니다...</div>
+                </div>
+
+                <div class="analysis-box">
+                    <div class="analysis-label">신뢰도</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidence-fill" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 승인 섹션 -->
+        <div class="panel" style="background: linear-gradient(135deg, rgba(17, 153, 142, 0.05), rgba(56, 239, 125, 0.05)); border: 2px solid #11998e;">
+            <h2 class="panel-title">✅ 사용자 승인</h2>
+            <div style="text-align: center; margin: 30px 0;">
+                <div style="font-size: 1.2em; color: #333; margin-bottom: 20px; font-weight: bold;">
+                    이 명령을 실행하시겠습니까?
+                </div>
+                <div style="background: #f0f0f0; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <div style="color: #666; font-size: 0.9em; margin-bottom: 5px;">추천 명령:</div>
+                    <div style="color: #11998e; font-size: 1.3em; font-weight: bold;" id="approval-command">FAN_ON</div>
+                </div>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button onclick="approveCommand()" style="background: #4caf50; padding: 15px 40px; font-size: 1.1em; flex: 0;">✅ 승인</button>
+                    <button onclick="rejectCommand()" style="background: #ff6b6b; padding: 15px 40px; font-size: 1.1em; flex: 0;">❌ 거부</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 인간-AI 루프 흐름 -->
+        <div class="system-flow">
+            <h2 class="flow-title">🔄 인간-AI 루프 흐름</h2>
+            
+            <div class="loop-diagram">
+                <div class="loop-step">1️⃣ 음성 입력</div>
+                <div class="loop-step">2️⃣ AI 분석</div>
+                <div class="loop-step">3️⃣ 사람 승인</div>
+                <div class="loop-step">4️⃣ 로봇 실행</div>
+                <div class="loop-arrow arrow1">⬇️</div>
+                <div class="loop-arrow arrow2">⬅️</div>
+                <div class="loop-arrow arrow3">⬆️</div>
+                <div class="loop-arrow arrow4">➡️</div>
+            </div>
+
+            <div class="human-in-loop-box">
+                <h4>🎯 인간-AI 루프의 의미</h4>
+                <ul>
+                    <li><strong>자율성과 안전성의 균형:</strong> AI가 의사결정을 주도하되, 최종 판단은 사람이 합니다.</li>
+                    <li><strong>오류 방지:</strong> AI의 오류 인식을 사람이 감지하고 수정할 수 있습니다.</li>
+                    <li><strong>신뢰도 향상:</strong> 사람의 승인으로 시스템의 신뢰도를 높입니다.</li>
+                    <li><strong>학습 기회:</strong> 사람의 승인/거부를 통해 AI가 지속적으로 학습합니다.</li>
+                </ul>
+            </div>
+
+            <div class="processing-steps">
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">음성 입력 수집</div>
+                        <div class="step-description">마이크로부터 음성을 녹음합니다. (예: "팬을 켜줘")</div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">음성-텍스트 변환</div>
+                        <div class="step-description">Speech Recognition 라이브러리로 음성을 텍스트로 변환합니다.</div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">OpenAI에 전송</div>
+                        <div class="step-description">변환된 텍스트를 OpenAI API로 전송하여 의도를 분석합니다.</div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">AI 응답 및 신뢰도 계산</div>
+                        <div class="step-description">AI가 {"action": "FAN_ON"} 형태의 JSON과 신뢰도 점수를 반환합니다.</div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">사용자에게 제시</div>
+                        <div class="step-description">AI의 분석 결과, 추천 명령, 신뢰도를 사용자에게 보여줍니다.</div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">사용자 승인/거부</div>
+                        <div class="step-description">사용자가 "승인" 또는 "거부" 버튼을 클릭합니다. <strong>이것이 인간-AI 루프의 핵심</strong></div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">7</div>
+                    <div class="step-content">
+                        <div class="step-title">MQTT로 명령 발행</div>
+                        <div class="step-description">승인된 경우에만 명령을 MQTT 브로커로 발행합니다. 거부된 경우 명령은 전송되지 않습니다.</div>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">8</div>
+                    <div class="step-content">
+                        <div class="step-title">ESP32에서 수신 및 실행</div>
+                        <div class="step-description">ESP32가 MQTT 명령을 수신하고 실제 하드웨어(팬, 펌프 등)를 제어합니다.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 비교 테이블 -->
+        <div style="background: white; border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); margin-bottom: 30px;">
+            <h2 style="font-size: 1.4em; color: #333; margin-bottom: 25px; text-align: center; border-bottom: 2px solid #11998e; padding-bottom: 12px;">📊 시스템 비교</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>구분</th>
+                        <th>NL2Action (PR10)</th>
+                        <th>Human in the Loop (PR11)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>사용자 입력</strong></td>
+                        <td>텍스트 명령</td>
+                        <td>음성 명령</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI 분석</strong></td>
+                        <td>실행</td>
+                        <td>실행</td>
+                    </tr>
+                    <tr>
+                        <td><strong>사람 개입</strong></td>
+                        <td>없음 (완전 자동)</td>
+                        <td>있음 (승인 필수)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>명령 실행</strong></td>
+                        <td>즉시 MQTT 발행</td>
+                        <td>승인 후 MQTT 발행</td>
+                    </tr>
+                    <tr>
+                        <td><strong>안전성</strong></td>
+                        <td>중간 (AI 신뢰 기반)</td>
+                        <td>높음 (사람 검증 포함)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>오류 방지</strong></td>
+                        <td>AI만 담당</td>
+                        <td>AI + 사람 담당</td>
+                    </tr>
+                    <tr>
+                        <td><strong>사용 케이스</strong></td>
+                        <td>신뢰성 높은 환경</td>
+                        <td>위험한 작업, 의료, 금융</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="features">
+            <h2 class="features-title">✨ 주요 특징</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎤 음성 인식</h4>
+                    <p>SpeechRecognition 라이브러리로 음성을 텍스트로 변환합니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🤖 AI 의도 분석</h4>
+                    <p>OpenAI GPT-4o로 음성 명령의 의도를 정확하게 파악합니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>👤 사람의 최종 판단</h4>
+                    <p>사용자가 AI의 분석을 검토하고 승인/거부를 결정합니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 신뢰도 표시</h4>
+                    <p>AI의 신뢰도 점수를 시각적으로 표시합니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔒 안전한 제어</h4>
+                    <p>승인 없이는 명령이 실행되지 않습니다.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📡 MQTT 연동</h4>
+                    <p>승인된 명령을 MQTT로 IoT 기기에 전달합니다.</p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button onclick="simulateFullDemo()">📺 전체 데모</button>
+                <button onclick="resetAll()">🔄 전체 초기화</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let microphoneActive = false;
+        let lastApproval = null;
+
+        function toggleMicrophone() {
+            const btn = document.getElementById('microphone-btn');
+            const status = document.getElementById('status-text');
+
+            if (!microphoneActive) {
+                microphoneActive = true;
+                btn.classList.add('recording');
+                status.textContent = '🔴 녹음 중... (말씀해주세요)';
+                
+                setTimeout(() => {
+                    btn.classList.remove('recording');
+                    microphoneActive = false;
+                    status.textContent = '✅ 음성 입력 완료';
+                    simulateVoiceInput('팬을 켜줘');
+                }, 2000);
+            }
+        }
+
+        function simulateVoiceInput(text) {
+            document.getElementById('transcript').textContent = text;
+            analyzeWithAI(text);
+        }
+
+        function analyzeWithAI(text) {
+            const analysis = {
+                '팬을 켜줘': {
+                    intention: '냉각 시스템의 팬을 활성화하기를 원합니다.',
+                    action: 'FAN_ON',
+                    confidence: 95
+                },
+                '팬 꺼줘': {
+                    intention: '냉각 시스템의 팬을 비활성화하기를 원합니다.',
+                    action: 'FAN_OFF',
+                    confidence: 94
+                },
+                '냉각 시작': {
+                    intention: '전체 냉각 시스템을 시작하기를 원합니다.',
+                    action: 'COOLING_ON',
+                    confidence: 92
+                }
+            };
+
+            const result = analysis[text] || {
+                intention: '알 수 없는 명령입니다.',
+                action: 'UNKNOWN',
+                confidence: 30
+            };
+
+            document.getElementById('intention').textContent = result.intention;
+            document.getElementById('recommended-action').textContent = `JSON: {"action": "${result.action}"}`;
+            document.getElementById('confidence-fill').style.width = result.confidence + '%';
+            document.getElementById('confidence-fill').textContent = result.confidence + '%';
+            document.getElementById('approval-command').textContent = result.action;
+        }
+
+        function approveCommand() {
+            const command = document.getElementById('approval-command').textContent;
+            lastApproval = { command, approved: true, timestamp: new Date().toLocaleTimeString('ko-KR') };
+            
+            alert('✅ 명령이 승인되었습니다!\n\n명령: ' + command + '\nMQTT로 발행됨: agri_log/robot/control/msm03');
+        }
+
+        function rejectCommand() {
+            const command = document.getElementById('approval-command').textContent;
+            lastApproval = { command, approved: false, timestamp: new Date().toLocaleTimeString('ko-KR') };
+            
+            alert('❌ 명령이 거부되었습니다.\n\n명령이 전송되지 않았습니다.');
+        }
+
+        function clearVoiceInput() {
+            document.getElementById('transcript').textContent = '음성을 입력하면 여기에 텍스트로 변환됩니다...';
+            document.getElementById('intention').textContent = '명령의 의도가 분석됩니다...';
+            document.getElementById('recommended-action').textContent = '추천 행동이 표시됩니다...';
+            document.getElementById('confidence-fill').style.width = '0%';
+            document.getElementById('confidence-fill').textContent = '0%';
+        }
+
+        function simulateFullDemo() {
+            clearVoiceInput();
+            const demoCommands = ['팬을 켜줘', '팬 꺼줘', '냉각 시작'];
+            let idx = 0;
+
+            const demoInterval = setInterval(() => {
+                simulateVoiceInput(demoCommands[idx]);
+                idx++;
+
+                if (idx >= demoCommands.length) {
+                    clearInterval(demoInterval);
+                }
+            }, 3000);
+        }
+
+        function resetAll() {
+            clearVoiceInput();
+            microphoneActive = false;
+            document.getElementById('microphone-btn').classList.remove('recording');
+            document.getElementById('status-text').textContent = '클릭해서 음성 입력';
+        }
+    </script>
+</body>
+</html>
